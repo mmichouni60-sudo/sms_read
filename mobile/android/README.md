@@ -1,14 +1,22 @@
-# Android prototype — Kotlin
+# SMS Read Android — early scaffold
 
-Initial files: SMS BroadcastReceiver, conservative parser, synthetic JUnit fixtures and manifest.
+Kotlin Android Gradle project (AGP 8.7.3 / Kotlin 2.0.21 / JDK 17), Room, SMS receiver, WorkManager and synthetic parser tests.
 
-**Not yet a buildable Android Studio project:** Gradle settings, app build configuration, launcher Activity, runtime permission UX, Room database, durable receiver persistence and WorkManager are still required.
+## Build
+Open `mobile/android` in Android Studio with Android SDK 35 and JDK 17. Sync Gradle and run the `app` configuration. A Gradle wrapper is not yet committed; use Android Studio's installed Gradle or generate the wrapper. Build/tests have **not** been executed or verified.
 
-## Important
-- `RECEIVE_SMS` is a dangerous permission requiring explicit runtime consent.
-- The receiver currently parses in memory only and **does not save transactions**. Messages received before durable persistence is added may be lost.
-- Real Iranian bank sender IDs and message templates are not yet verified. Synthetic fixtures are examples, not evidence of bank support.
-- For multipart messages, production implementation must group by originating address and SMS concatenation metadata rather than blindly joining arbitrary PDUs.
-- Never upload raw messages without informed consent; apply retention and encryption controls.
-- SMS reception can be restricted by OS/OEM policies and is not guaranteed after force-stop.
-- Google Play restricts SMS permissions; evaluate distribution policy before release.
+## Current behavior
+- User can request RECEIVE_SMS permission from the launcher screen.
+- Receiver attempts to persist incoming SMS in Room using a bounded asynchronous broadcast continuation, then queues constrained WorkManager work.
+- Unrecognized SMS also enters REVIEW, which currently means non-bank messages may be stored; **do not deploy to real devices before filtering and explicit consent UX are improved**.
+- WorkManager currently returns retry when pending data exists. **No server transmission exists yet.**
+- Room data is **not encrypted**. Never test with real private bank SMS until encrypted persistence and data deletion controls are added.
+- The prototype uses a UUID per broadcast; redelivery can create duplicates. Production needs stable deduplication and multipart handling.
+- SMS delivery and execution after force-stop are not guaranteed. Google Play restricts SMS permission use.
+- No production claim: this is an untested implementation scaffold, not a release build.
+
+## Next
+1. Bank sender allowlist and explicit consent, encrypted persistence, lifecycle tests.
+2. Real redacted fixtures for banks; account identity and Jalali timestamp parser.
+3. FastAPI auth and idempotent batch endpoint.
+4. Replace retry-only worker with authenticated upload, partial ACK and backoff tests.
